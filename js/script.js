@@ -9,6 +9,7 @@ redStartingLocations = [1,3,5,7,
 //variables
 var board;
 var playerTurn;
+var activatedPiece = null;
 class Piece {
     constructor(color,isKing,locationOnBoard){
         this.color = color;
@@ -17,6 +18,7 @@ class Piece {
         this.possibleMoves = [];
     }
     findPossibleMoves(){
+
         let possibleMoves = [this.locationOnBoard-9,    //NW jump
                             this.locationOnBoard-7,     //NE jump
                             this.locationOnBoard+7,     //SW jump
@@ -46,6 +48,10 @@ class Piece {
             }
         });
         return possibleMoves.filter(move => move);
+
+        //Need to add possible move for jumping a piece
+
+
     }
 }
 
@@ -85,21 +91,36 @@ function init() {
 
 function pieceEventHandler(evt){
     if (evt.target.tagName === 'section' || 
-        !evt.target.hasAttribute('src')) {
+        !evt.target.hasAttribute('src') ||
+        (evt.target.getAttribute('src') == 'images/Target.png' && !activatedPiece)) {
             return;
         }
-    let pieceClicked = board[(parseInt(evt.target.className))];
-    // for (let i=0;)
-    console.log(pieceClicked.possibleMoves);    
+    //update location
+    if (evt.target.getAttribute('src') == 'images/Target.png'){
+        board[(parseInt(evt.target.className))] = activatedPiece;
+        board[activatedPiece.locationOnBoard] = null;
+        activatedPiece.locationOnBoard = (parseInt(evt.target.className));
+        //update possible moves
+        board.forEach(function(boardSpot,idc){
+            if (boardSpot) {boardSpot.possibleMoves = boardSpot.findPossibleMoves()}
+        });
+        togglePlayerTurn();
+        activatedPiece = null;
+        render();
+        return;
+    }
+    if (board[(parseInt(evt.target.className))].color === playerTurn) {
+        activatedPiece = board[(parseInt(evt.target.className))];
+    }
+    console.log(activatedPiece);
+    render();
 }
 
-//Maybe put this in the class, and pass in board
-// function findPossibleMoves(){
-    
-// }
+function togglePlayerTurn(){
+    playerTurn = playerTurn === 'red' ? 'black' : 'red';
+}
 
 function render(){
-
     board.forEach(function(boardSpot, idx){
         if (boardSpot === null) {
             boardSpotsEl[idx].removeAttribute('src');
@@ -113,6 +134,12 @@ function render(){
             boardSpotsEl[idx].setAttribute('src',"images/Red.Png");        
         }
     });
+    if (activatedPiece){
+        activatedPiece.findPossibleMoves();
+        for (let i=0; i<activatedPiece.possibleMoves.length; i++) {
+            boardSpotsEl[activatedPiece.possibleMoves[i]].setAttribute('src','images/Target.png');
+        }
+    }
     turnEl.textContent = `${playerTurn} Goes First`; //Maybe capitalize the first letter here
     checkWinner();
 }
