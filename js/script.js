@@ -42,6 +42,7 @@ class Piece {
             possibleMoves[3] = null;
         }
         //check if there is a piece at new possible move location
+        //look to use another array method other than for each
         possibleMoves.forEach(function(move,index){
             if (move){
                 if (board[move]) {possibleMoves[index] = null;}
@@ -140,7 +141,7 @@ function render(){
             boardSpotsEl[activatedPiece.possibleMoves[i]].setAttribute('src','images/Target.png');
         }
     }
-    turnEl.textContent = `${playerTurn} Goes First`; //Maybe capitalize the first letter here
+    turnEl.textContent = `${playerTurn}'s turn`; //Maybe capitalize the first letter here
     checkWinner();
 }
 
