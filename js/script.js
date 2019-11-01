@@ -198,13 +198,13 @@ function render(){
         if (boardSpot === null) {
             boardSpotsEl[idx].removeAttribute('src');
         } else if (boardSpot.color === 'black' && boardSpot.isKing) {
-            boardSpotsEl[idx].setAttribute('src',"images/BlackKing.Png");        
+            boardSpotsEl[idx].setAttribute('src',"../images/BlackKing.Png");        
         } else if (boardSpot.color === 'black' && !boardSpot.isKing) {
-            boardSpotsEl[idx].setAttribute('src',"images/Black.Png");        
+            boardSpotsEl[idx].setAttribute('src',"../images/Black.Png");        
         } else if (boardSpot.color === 'red' && boardSpot.isKing) {
-            boardSpotsEl[idx].setAttribute('src',"images/RedKing.Png");        
+            boardSpotsEl[idx].setAttribute('src',"../images/RedKing.Png");        
         } else if (boardSpot.color === 'red' && !boardSpot.isKing) {
-            boardSpotsEl[idx].setAttribute('src',"images/Red.Png");        
+            boardSpotsEl[idx].setAttribute('src',"../images/Red.Png");        
         }
     });
     if (activatedPiece){
