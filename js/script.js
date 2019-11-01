@@ -9,7 +9,9 @@ redStartingLocations = [1,3,5,7,
 //variables
 var board;
 var playerTurn;
-var activatedPiece = null;
+var activatedPiece;
+var lastPieceJumped;
+var possibleDoubleJump;
 class Piece {
     constructor(color,isKing,locationOnBoard){
         this.color = color;
@@ -19,35 +21,73 @@ class Piece {
     }
     findPossibleMoves(){
 
-        let possibleMoves = [this.locationOnBoard-9,    //NW jump
-                            this.locationOnBoard-7,     //NE jump
-                            this.locationOnBoard+7,     //SW jump
-                            this.locationOnBoard+9];    //SE jump
-        //Eliminate possible moves outside of board (piece on edge)
-        //Ex: eliminates West jumps if piece on West(left) edge of board
+        // populate all possible moves and eliminate them, based on board.
+        // other option: check each move and eliminate it one by one
+        let possibleMoves = [this.locationOnBoard-9,    //NW move
+                            this.locationOnBoard-7,     //NE move
+                            this.locationOnBoard+7,     //SW move
+                            this.locationOnBoard+9,     //SE move
+                            this.locationOnBoard -18,   //NW jump
+                            this.locationOnBoard -14,   //NE jump
+                            this.locationOnBoard +14,   //SW jump
+                            this.locationOnBoard + 18]; //SE jump
+        // remove moves outside of begining and ending of board
+        possibleMoves = possibleMoves.map(function(boardSpot){
+            return (boardSpot<0 || boardSpot>63) ? null : boardSpot;
+        })
         if (!(this.locationOnBoard%8)) {
             possibleMoves[0] = null;
             possibleMoves[2] = null;
+            possibleMoves[4] = null;
+            possibleMoves[6] = null;
+        } else if (!((this.locationOnBoard-1)%8)) {
+        //Eliminate possible moves outside of board (piece on edge)
+        //Ex: eliminates West move/jump if piece on West(left) edge of board
+            possibleMoves[4] = null;
+            possibleMoves[4] = null;
         }
+        // eliminate east move/jump if pice on East edge of board
         if (!((this.locationOnBoard+1)%8)) {
             possibleMoves[1] = null;
             possibleMoves[3] = null;
+            possibleMoves[5] = null;
+            possibleMoves[7] = null;
+        } else if (!((this.locationOnBoard+2)%8)) {
+            possibleMoves[5] = null;
+            possibleMoves[7] = null;
         }
-        //Eliminate jump of piece moving backwards
+        //Eliminate move/jump of piece moving backwards
         if (this.color ==='red' && !this.isKing){
             possibleMoves[0] = null;
             possibleMoves[1] = null;
+            possibleMoves[4] = null;
+            possibleMoves[5] = null;
         } else if (this.color === 'black' && !this.isKing){
             possibleMoves[2] = null;
             possibleMoves[3] = null;
+            possibleMoves[6] = null;
+            possibleMoves[7] = null;
         }
         //check if there is a piece at new possible move location
         //look to use another array method other than for each
         possibleMoves.forEach(function(move,index){
             if (move){
-                if (board[move]) {possibleMoves[index] = null;}
+                if (board[move]) {
+                    possibleMoves[index] = null;    //eliminates jump/move on occupied space
+                } else if (index<4) {
+                    possibleMoves[index+4] = null   //eliminates jump of empty space
+                }
             }
         });
+        //eliminate jump of same color piece
+        for (let i=4; i<possibleMoves.length; i++){
+            if (possibleMoves[i]){
+                if (board[(possibleMoves[i]+this.locationOnBoard)/2].color === this.color){
+                    possibleMoves[i] = null;
+                }
+            }
+        }
+
         return possibleMoves.filter(move => move);
 
         //Need to add possible move for jumping a piece
@@ -74,6 +114,9 @@ boardEl.addEventListener('click',pieceEventHandler);
 function init() {
     playerTurn = 'red'
     board = [];
+    activatedPiece = null;
+    lastPieceJumped = false;
+    possibleDoubleJump = false;
     while (board.length < 64) { board.push(null); }
 
     //place objects pieces on board
@@ -91,6 +134,15 @@ function init() {
 }
 
 function pieceEventHandler(evt){
+    //if player had chance to double jump but didn't execute
+    if (possibleDoubleJump && (evt.target.getAttribute('src') != 'images/Target.png' )){
+        togglePlayerTurn();
+        activatedPiece = null;
+        possibleDoubleJump = false;
+        render();
+        return;
+    }
+    // console.log(possibleDoubleJump);
     if (evt.target.tagName === 'section' || 
         !evt.target.hasAttribute('src') ||
         (evt.target.getAttribute('src') == 'images/Target.png' && !activatedPiece)) {
@@ -98,22 +150,40 @@ function pieceEventHandler(evt){
         }
     //update location
     if (evt.target.getAttribute('src') == 'images/Target.png'){
-        board[(parseInt(evt.target.className))] = activatedPiece;
-        board[activatedPiece.locationOnBoard] = null;
-        activatedPiece.locationOnBoard = (parseInt(evt.target.className));
-        //update possible moves
-        board.forEach(function(boardSpot,idc){
+        //move piece
+        movePiece(activatedPiece, parseInt(evt.target.className));
+        
+        //update possible moves on board
+        board.forEach(function(boardSpot){
             if (boardSpot) {boardSpot.possibleMoves = boardSpot.findPossibleMoves()}
         });
+        //check if double jump available
+        if (lastPieceJumped) {
+            //checks all possible moves for doublejump.
+            // for (i=0; i<activatedPiece.possibleMoves.length;i++){
+                possibleDoubleJump = activatedPiece.possibleMoves.some(function(possMove){
+                    return Math.abs(possMove-activatedPiece.locationOnBoard)>10
+                });
+                console.log(possibleDoubleJump);
+                //if doublejump available, remove single jump options
+                if (possibleDoubleJump) {
+                    activatedPiece.possibleMoves = activatedPiece.possibleMoves.filter(function(possMove){
+                        return Math.abs(possMove-activatedPiece.locationOnBoard)>10;
+                    });
+                    render();
+                    return;
+                }
+            // }
+        }
         togglePlayerTurn();
         activatedPiece = null;
         render();
         return;
     }
+    //activate piece, render will then show possible moves
     if (board[(parseInt(evt.target.className))].color === playerTurn) {
         activatedPiece = board[(parseInt(evt.target.className))];
     }
-    console.log(activatedPiece);
     render();
 }
 
@@ -136,7 +206,7 @@ function render(){
         }
     });
     if (activatedPiece){
-        activatedPiece.findPossibleMoves();
+        // activatedPiece.findPossibleMoves();
         for (let i=0; i<activatedPiece.possibleMoves.length; i++) {
             boardSpotsEl[activatedPiece.possibleMoves[i]].setAttribute('src','images/Target.png');
         }
@@ -149,12 +219,21 @@ function checkWinner(){
 
 }
 
-function movePiece(){
-    
+function movePiece(pieceToMove, newLocation){
+    board[newLocation] = pieceToMove;
+    //check if piece jumped
+    lastPieceJumped = (Math.abs(newLocation-pieceToMove.locationOnBoard)>10) ? true : false;
+    //remove piece that was jumped
+    if (lastPieceJumped) {
+        board[Math.abs(newLocation+pieceToMove.locationOnBoard)/2] = null;
+    }
+    board[pieceToMove.locationOnBoard] = null;
+    pieceToMove.locationOnBoard = newLocation;
 }
 
 function updateBoard(){
 
 }
+
 
 init();
