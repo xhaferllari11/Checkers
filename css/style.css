@@ -15,7 +15,7 @@ body {
 section {
     display: flex;
     flex-wrap: wrap;
-    background-image: url("../images/Board.png");
+    background-image: url("../images/Board.PNG");
     background-size: var(--board-size);
     height: var(--board-size);
     width: var(--board-size);
