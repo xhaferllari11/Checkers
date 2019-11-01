@@ -3,9 +3,6 @@ redStartingLocations = [1,3,5,7,
                     8,10,12,14,
                     17,19,21,23]; //Red locations used to calculate black also
 
-
-
-
 //variables
 var board;
 var playerTurn;
@@ -88,15 +85,9 @@ class Piece {
                 }
             }
         }
-
         return possibleMoves.filter(move => move);
-
-        //Need to add possible move for jumping a piece
-
-
     }
 }
-
 
 // cached elements
 boardEl = document.querySelector('section');
@@ -104,12 +95,9 @@ turnEl = document.querySelector('h2');
 restartBtn = document.querySelector('button');
 boardSpotsEl = document.querySelectorAll('section img');
 
-
-
 //event listeners
-boardEl.addEventListener('click',pieceEventHandler);
-
-
+boardEl.addEventListener('click', pieceEventHandler);
+restartBtn.addEventListener('click', init);
 
 //functions
 function init() {
@@ -120,7 +108,6 @@ function init() {
     possibleDoubleJump = false;
     winner = null;
     while (board.length < 64) { board.push(null); }
-
     //place objects pieces on board
     redStartingLocations.forEach(function(location){
         board[location] = new Piece('red',false,location);
@@ -144,7 +131,6 @@ function pieceEventHandler(evt){
         render();
         return;
     }
-    // console.log(possibleDoubleJump);
     if (evt.target.tagName === 'section' || 
         !evt.target.hasAttribute('src') ||
         (evt.target.getAttribute('src') == 'images/Target.png' && !activatedPiece)) {
@@ -154,7 +140,6 @@ function pieceEventHandler(evt){
     if (evt.target.getAttribute('src') == 'images/Target.png'){
         //move piece
         movePiece(activatedPiece, parseInt(evt.target.className));
-        
         //update possible moves on board
         board.forEach(function(boardSpot){
             if (boardSpot) {boardSpot.possibleMoves = boardSpot.findPossibleMoves()}
@@ -162,20 +147,18 @@ function pieceEventHandler(evt){
         //check if double jump available
         if (lastPieceJumped) {
             //checks all possible moves for doublejump.
-            // for (i=0; i<activatedPiece.possibleMoves.length;i++){
-                possibleDoubleJump = activatedPiece.possibleMoves.some(function(possMove){
-                    return Math.abs(possMove-activatedPiece.locationOnBoard)>10
+            possibleDoubleJump = activatedPiece.possibleMoves.some(function(possMove){
+                return Math.abs(possMove-activatedPiece.locationOnBoard)>10
+            });
+            console.log(possibleDoubleJump);
+            //if doublejump available, remove single jump options
+            if (possibleDoubleJump) {
+                activatedPiece.possibleMoves = activatedPiece.possibleMoves.filter(function(possMove){
+                    return Math.abs(possMove-activatedPiece.locationOnBoard)>10;
                 });
-                console.log(possibleDoubleJump);
-                //if doublejump available, remove single jump options
-                if (possibleDoubleJump) {
-                    activatedPiece.possibleMoves = activatedPiece.possibleMoves.filter(function(possMove){
-                        return Math.abs(possMove-activatedPiece.locationOnBoard)>10;
-                    });
-                    render();
-                    return;
-                }
-            // }
+                render();
+                return;
+            }
         }
         togglePlayerTurn();
         activatedPiece = null;
@@ -208,16 +191,14 @@ function render(){
         }
     });
     if (activatedPiece){
-        // activatedPiece.findPossibleMoves();
         for (let i=0; i<activatedPiece.possibleMoves.length; i++) {
             boardSpotsEl[activatedPiece.possibleMoves[i]].setAttribute('src','images/Target.png');
         }
     }
-    //update message for players tunr or winner
+    //update message for players turn or winner
     turnEl.textContent = (winner) ? `${winner} wins. CONGRATS!!!`:`${playerTurn}'s turn`; //Maybe capitalize the first letter here
     
 }
-
 
 function movePiece(pieceToMove, newLocation){
     board[newLocation] = pieceToMove;
@@ -254,11 +235,8 @@ function checkWinner(){
         return 'red';
     }
     return null;
+
+    //Add the checkStalemate condition();
 }
-
-function updateBoard(){
-
-}
-
 
 init();
