@@ -12,6 +12,7 @@ var playerTurn;
 var activatedPiece;
 var lastPieceJumped;
 var possibleDoubleJump;
+var winner;
 class Piece {
     constructor(color,isKing,locationOnBoard){
         this.color = color;
@@ -44,7 +45,7 @@ class Piece {
         //Eliminate possible moves outside of board (piece on edge)
         //Ex: eliminates West move/jump if piece on West(left) edge of board
             possibleMoves[4] = null;
-            possibleMoves[4] = null;
+            possibleMoves[6] = null;
         }
         // eliminate east move/jump if pice on East edge of board
         if (!((this.locationOnBoard+1)%8)) {
@@ -117,6 +118,7 @@ function init() {
     activatedPiece = null;
     lastPieceJumped = false;
     possibleDoubleJump = false;
+    winner = null;
     while (board.length < 64) { board.push(null); }
 
     //place objects pieces on board
@@ -211,13 +213,11 @@ function render(){
             boardSpotsEl[activatedPiece.possibleMoves[i]].setAttribute('src','images/Target.png');
         }
     }
-    turnEl.textContent = `${playerTurn}'s turn`; //Maybe capitalize the first letter here
-    checkWinner();
+    //update message for players tunr or winner
+    turnEl.textContent = (winner) ? `${winner} wins. CONGRATS!!!`:`${playerTurn}'s turn`; //Maybe capitalize the first letter here
+    
 }
 
-function checkWinner(){
-
-}
 
 function movePiece(pieceToMove, newLocation){
     board[newLocation] = pieceToMove;
@@ -226,9 +226,34 @@ function movePiece(pieceToMove, newLocation){
     //remove piece that was jumped
     if (lastPieceJumped) {
         board[Math.abs(newLocation+pieceToMove.locationOnBoard)/2] = null;
+        winner = checkWinner();
     }
     board[pieceToMove.locationOnBoard] = null;
     pieceToMove.locationOnBoard = newLocation;
+    //check if piece reached end of board to be Kinged
+    if ((newLocation>55 || newLocation<8) && !pieceToMove.isKing) {
+        pieceToMove.isKing = true;
+    }
+}
+
+function checkWinner(){
+    let redsLeft = 0;
+    let blacksLeft = 0;
+    board.forEach(function(boardSpot){
+        if (boardSpot){
+            if (boardSpot.color == 'red'){
+                redsLeft += 1;
+            } else if (boardSpot.color == 'black'){
+                blacksLeft += 1;
+            }
+        }
+    });
+    if (redsLeft == 0) {
+        return 'black';
+    } else if (blacksLeft == 0){
+        return 'red';
+    }
+    return null;
 }
 
 function updateBoard(){
