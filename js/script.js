@@ -1,19 +1,19 @@
 //constants
 const redStartingLocations = [1,3,5,7,
                             8,10,12,14,
-                            17,19,21,23];   //Red locations used to calculate black also
+                            17,19,21,23];   //Board is array 0-63.
 
 const playTime = 5;                         //minutes
 
 //variables
-var timers;
-var board;
-var playerTurn;
-var activatedPiece;
-var lastPieceJumped;
-var possibleDoubleJump;
-var winner;
-var timerFunc;
+var timers;                 //object to hold time left
+var board;                  //array 0-63 representing spot on board
+var playerTurn;             //string of 'red' or 'black'
+var activatedPiece;         //points to piece object player selected
+var lastPieceJumped;        //boolean true if last action was a piece that jumped
+var possibleDoubleJump;     //boolean true if current piece has chance to double jump
+var winner;                 //null, unless someone wins, then player string
+var timerFunc;              //will hold function for timer timeInterval
 class Piece {
     constructor(color,isKing,locationOnBoard){
         this.color = color;
@@ -36,14 +36,14 @@ class Piece {
         possibleMoves = possibleMoves.map(function(boardSpot){
             return (boardSpot<0 || boardSpot>63) ? null : boardSpot;
         })
+        //Eliminate possible moves outside of board (piece on edge)
+        //Ex: eliminates West move/jump if piece on West(left) edge of board
         if (!(this.locationOnBoard%8)) {
             possibleMoves[0] = null;
             possibleMoves[2] = null;
             possibleMoves[4] = null;
             possibleMoves[6] = null;
         } else if (!((this.locationOnBoard-1)%8)) {
-        //Eliminate possible moves outside of board (piece on edge)
-        //Ex: eliminates West move/jump if piece on West(left) edge of board
             possibleMoves[4] = null;
             possibleMoves[6] = null;
         }
@@ -70,7 +70,6 @@ class Piece {
             possibleMoves[7] = null;
         }
         //check if there is a piece at new possible move location
-        //look to use another array method other than for each
         possibleMoves.forEach(function(move,index){
             if (move){
                 if (board[move]) {
@@ -102,7 +101,6 @@ blackTimerImgEl = document.querySelector('div.buttonandtimer .blackpiece');
 redTimerEl = document.querySelector('.redtimer');
 blackTimerEl = document.querySelector('.blacktimer');
 
-
 //event listeners
 boardEl.addEventListener('click', boardClickHandler);
 restartBtn.addEventListener('click', init);
@@ -116,27 +114,45 @@ function init() {
     possibleDoubleJump = false;
     winner = null;
     timers = {
-        'red': {'min':playTime, 'sec':00},
-        'black': {'min':playTime, 'sec':00}
+        'red': {'min':playTime, 'sec':0},
+        'black': {'min':playTime, 'sec':0}
     }
     while (board.length < 64) { board.push(null); }
-    //place objects pieces on board
+    //place object pieces on board
     redStartingLocations.forEach(function(location){
         board[location] = new Piece('red',false,location);
         board[63-location] = new Piece('black',false,(63-location));
     });
-    //find possible moves after objects placed
+    //find possible moves of each piece after objects/pieces are placed
     board.forEach(function(obj,idx){
         if (obj){
             obj.possibleMoves = obj.findPossibleMoves();
         }
     });
+    //start timer and render
     timerFunc = setInterval(updateTimer,1000);
     render();
 }
 
+function updateTimer(){
+    if (timers[playerTurn]['sec']) {
+        timers[playerTurn]['sec'] = timers[playerTurn]['sec'] -1;
+    } else {
+        timers[playerTurn]['sec'] = 59;
+        timers[playerTurn]['min'] = timers[playerTurn]['min'] - 1;
+    }
+    //there is a render function that only renders timer. didn't want to call render just for timer
+    renderTimer();
+    //condition for running out of time
+    if (timers[playerTurn]['min'] == 0 && timers[playerTurn]['sec'] == 0){
+        winner = playerTurn == 'red' ? 'black' : 'red';
+        render();
+        clearInterval(timerFunc);
+    }
+}
+
 function boardClickHandler(evt){
-    //if player had chance to double jump but didn't execute
+    //if player had chance to double jump but didn't execute, signifies end of turn
     if (possibleDoubleJump && (evt.target.getAttribute('src') != 'images/Target.png' )){
         togglePlayerTurn();
         activatedPiece = null;
@@ -149,7 +165,8 @@ function boardClickHandler(evt){
         (evt.target.getAttribute('src') == 'images/Target.png' && !activatedPiece)) {
             return;
         }
-    //update location if player clicked on a target move spot
+
+    //if player clicked on a possible move spot, move activated piece there
     if (evt.target.getAttribute('src') == 'images/Target.png'){
         //move piece
         movePiece(activatedPiece, parseInt(evt.target.className));
@@ -159,7 +176,6 @@ function boardClickHandler(evt){
         });
         //check if double jump available
         if (lastPieceJumped) {
-            //checks all possible moves for doublejump.
             possibleDoubleJump = activatedPiece.possibleMoves.some(function(possMove){
                 return Math.abs(possMove-activatedPiece.locationOnBoard)>10
             });
@@ -168,18 +184,18 @@ function boardClickHandler(evt){
                 activatedPiece.possibleMoves = activatedPiece.possibleMoves.filter(function(possMove){
                     return Math.abs(possMove-activatedPiece.locationOnBoard)>10;
                 });
+                //return here to keep player turn, in case player double jumps
                 render();
                 return;
             }
         }
         togglePlayerTurn();
         winner = checkStaleMate();
-        console.log(winner);
         activatedPiece = null;
         render();
         return;
     }
-    //if activated piece, show possible moves
+    //if player clicked a piece, show possible moves
     if (board[(parseInt(evt.target.className))].color === playerTurn) {
         activatedPiece = board[(parseInt(evt.target.className))];
     }
@@ -188,6 +204,64 @@ function boardClickHandler(evt){
 
 function togglePlayerTurn(){
     playerTurn = playerTurn === 'red' ? 'black' : 'red';
+}
+
+function movePiece(pieceToMove, newLocation){
+    board[newLocation] = pieceToMove;
+    //check if piece jumped
+    lastPieceJumped = (Math.abs(newLocation-pieceToMove.locationOnBoard)>10) ? true : false;
+    //remove piece that was jumped
+    if (lastPieceJumped) {
+        board[Math.abs(newLocation+pieceToMove.locationOnBoard)/2] = null;
+        winner = checkWinner();
+    }
+    //update board
+    board[pieceToMove.locationOnBoard] = null;
+    pieceToMove.locationOnBoard = newLocation;
+    //check if piece reached end of board to be Kinged
+    if ((newLocation>55 || newLocation<8) && !pieceToMove.isKing) {
+        pieceToMove.isKing = true;
+    }
+}
+
+function checkWinner(){
+    let redsLeft = 0;
+    let blacksLeft = 0;
+    //Maybe use a some method or accumulator
+    board.forEach(function(boardSpot){
+        if (boardSpot){
+            if (boardSpot.color == 'red'){
+                redsLeft += 1;
+            } else if (boardSpot.color == 'black'){
+                blacksLeft += 1;
+            }
+        }
+    });
+    if (redsLeft == 0) {
+        clearInterval(timerFunc);
+        return 'black';
+    } else if (blacksLeft == 0){
+        clearInterval(timerFunc);
+        return 'red';
+    }
+    return null;
+}
+
+function checkStaleMate(){
+    let hasPossibleMoves = false;
+    board.forEach(function(boardSpot){
+        if (boardSpot) {
+            if (boardSpot.color == playerTurn && boardSpot.possibleMoves.length) {
+                hasPossibleMoves = true;
+            }
+        }
+    })
+    if (hasPossibleMoves) {
+        return null;
+    } else {
+        clearInterval(timerFunc);
+        return 0;
+    }
 }
 
 function render(){
@@ -204,14 +278,18 @@ function render(){
             boardSpotsEl[idx].setAttribute('src',"images/Red.png");        
         }
     });
+    //show possible move locations if player actiaved a piece
     if (activatedPiece){
         for (let i=0; i<activatedPiece.possibleMoves.length; i++) {
             boardSpotsEl[activatedPiece.possibleMoves[i]].setAttribute('src','images/Target.png');
         }
     }
-    //update message for players turn or winner
-    winningMessageEl.textContent = (winner) ? `${winner} wins. CONGRATS!!!`:`Checkers`; //Maybe capitalize the first letter here
-    winningMessageEl.textContent = (winner==0) ? `${playerTurn === 'red' ? 'black':'red'} wins by default. CONGRATS!!!`:`Checkers`; //Maybe capitalize the first letter here
+    //winner messages
+    if (winner) {
+        winningMessageEl.textContent = `${winner} wins. CONGRATS!!!`; //Maybe capitalize the first letter here
+    } else if (winner == 0) {
+        winningMessageEl.textContent = `${playerTurn === 'red' ? 'black':'red'} wins by default. CONGRATS!!!`; //Maybe capitalize the first letter here
+    }
     //update timer boxes
     if (playerTurn == 'red') {
         redTimerImgEl.style.backgroundColor = 'green';
@@ -231,66 +309,4 @@ function renderTimer(){
     blackTimerEl.textContent = `${timers.black.min}:${(timers.black.sec<10) ? '0'+timers.black.sec:timers.black.sec}`;
 }
 
-function updateTimer(){
-    if (timers[playerTurn]['sec']) {
-        timers[playerTurn]['sec'] = timers[playerTurn]['sec'] -1;
-    } else {
-        timers[playerTurn]['sec'] = 59;
-        timers[playerTurn]['min'] = timers[playerTurn]['min'] - 1;
-    }
-    renderTimer();
-}
-
-function movePiece(pieceToMove, newLocation){
-    board[newLocation] = pieceToMove;
-    //check if piece jumped
-    lastPieceJumped = (Math.abs(newLocation-pieceToMove.locationOnBoard)>10) ? true : false;
-    //remove piece that was jumped
-    if (lastPieceJumped) {
-        board[Math.abs(newLocation+pieceToMove.locationOnBoard)/2] = null;
-        winner = checkWinner();
-    }
-    board[pieceToMove.locationOnBoard] = null;
-    pieceToMove.locationOnBoard = newLocation;
-    //check if piece reached end of board to be Kinged
-    if ((newLocation>55 || newLocation<8) && !pieceToMove.isKing) {
-        pieceToMove.isKing = true;
-    }
-}
-
-function checkWinner(){
-    let redsLeft = 0;
-    let blacksLeft = 0;
-    board.forEach(function(boardSpot){
-        if (boardSpot){
-            if (boardSpot.color == 'red'){
-                redsLeft += 1;
-            } else if (boardSpot.color == 'black'){
-                blacksLeft += 1;
-            }
-        }
-    });
-    if (redsLeft == 0) {
-        return 'black';
-    } else if (blacksLeft == 0){
-        return 'red';
-    }
-    return null;
-}
-
-function checkStaleMate(){
-    let hasPossibleMoves = false;
-    board.forEach(function(boardSpot){
-        if (boardSpot) {
-            console.log(boardSpot.color);
-            console.log(playerTurn);
-            if (boardSpot.color == playerTurn && boardSpot.possibleMoves.length) {
-                console.log(boardSpot.possibleMoves)
-                hasPossibleMoves = true;
-            }
-        }
-    })
-    return (hasPossibleMoves) ? null : 0;
-}
-
-init();
+// init();
