@@ -7,8 +7,29 @@
 }
 
 body {
+    /* display: flex; */
+    /* flex-direction: column; */
+    /* align-items: center; */
+    text-align: center;
+}
+
+div.container {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    margin-left: 20%;
+}
+div.buttonandtimer {
+    margin: 8%;
+    text-align: center;
+}
+div.buttonandtimer img {
+    height: calc(var(--board-size) / 12);
+    width: calc(var(--board-size) / 12);
+}
+div.buttonandtimer div {
+    display: flex;
+    justify-content: flex-start;
     align-items: center;
 }
 
@@ -24,8 +45,15 @@ section {
 section img {
     height: calc(var(--board-size) / 8);
     width: calc(var(--board-size) / 8);
-    
 }
+button {
+    display: block;
+    margin-bottom: 10%;
+}
+div h3 {
+    margin-left: 5%;
+}
+
 
 
 @media only screen and (max-width: 768px) {

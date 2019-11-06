@@ -19,8 +19,7 @@ class Piece {
     }
     findPossibleMoves(){
 
-        // populate all possible moves and eliminate them, based on board.
-        // other option: check each move and eliminate it one by one
+        // populate all possible moves and eliminate impossible moves, based on board layout.
         let possibleMoves = [this.locationOnBoard-9,    //NW move
                             this.locationOnBoard-7,     //NE move
                             this.locationOnBoard+7,     //SW move
@@ -94,6 +93,8 @@ boardEl = document.querySelector('section');
 turnEl = document.querySelector('h2');
 restartBtn = document.querySelector('button');
 boardSpotsEl = document.querySelectorAll('section img');
+redTimerImgEl = document.querySelector('div.buttonandtimer .redpiece');
+blackTimerImgEl = document.querySelector('div.buttonandtimer .blackpiece');
 
 //event listeners
 boardEl.addEventListener('click', pieceEventHandler);
@@ -177,6 +178,8 @@ function togglePlayerTurn(){
 }
 
 function render(){
+    redTimerImgEl.setAttribute('src',"images/Red.png");
+    blackTimerImgEl.setAttribute('src',"images/Black.png");
     board.forEach(function(boardSpot, idx){
         if (boardSpot === null) {
             boardSpotsEl[idx].removeAttribute('src');
