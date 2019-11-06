@@ -1,15 +1,19 @@
 //constants
-redStartingLocations = [1,3,5,7,
-                    8,10,12,14,
-                    17,19,21,23]; //Red locations used to calculate black also
+const redStartingLocations = [1,3,5,7,
+                            8,10,12,14,
+                            17,19,21,23];   //Red locations used to calculate black also
+
+const playTime = 5;                         //minutes
 
 //variables
+var timers;
 var board;
 var playerTurn;
 var activatedPiece;
 var lastPieceJumped;
 var possibleDoubleJump;
 var winner;
+var timerFunc;
 class Piece {
     constructor(color,isKing,locationOnBoard){
         this.color = color;
@@ -90,14 +94,17 @@ class Piece {
 
 // cached elements
 boardEl = document.querySelector('section');
-turnEl = document.querySelector('h2');
+winningMessageEl = document.querySelector('h1');
 restartBtn = document.querySelector('button');
 boardSpotsEl = document.querySelectorAll('section img');
 redTimerImgEl = document.querySelector('div.buttonandtimer .redpiece');
 blackTimerImgEl = document.querySelector('div.buttonandtimer .blackpiece');
+redTimerEl = document.querySelector('.redtimer');
+blackTimerEl = document.querySelector('.blacktimer');
+
 
 //event listeners
-boardEl.addEventListener('click', pieceEventHandler);
+boardEl.addEventListener('click', boardClickHandler);
 restartBtn.addEventListener('click', init);
 
 //functions
@@ -108,6 +115,10 @@ function init() {
     lastPieceJumped = false;
     possibleDoubleJump = false;
     winner = null;
+    timers = {
+        'red': {'min':playTime, 'sec':00},
+        'black': {'min':playTime, 'sec':00}
+    }
     while (board.length < 64) { board.push(null); }
     //place objects pieces on board
     redStartingLocations.forEach(function(location){
@@ -119,11 +130,12 @@ function init() {
         if (obj){
             obj.possibleMoves = obj.findPossibleMoves();
         }
-    })
+    });
+    timerFunc = setInterval(updateTimer,1000);
     render();
 }
 
-function pieceEventHandler(evt){
+function boardClickHandler(evt){
     //if player had chance to double jump but didn't execute
     if (possibleDoubleJump && (evt.target.getAttribute('src') != 'images/Target.png' )){
         togglePlayerTurn();
@@ -137,7 +149,7 @@ function pieceEventHandler(evt){
         (evt.target.getAttribute('src') == 'images/Target.png' && !activatedPiece)) {
             return;
         }
-    //update location
+    //update location if player clicked on a target move spot
     if (evt.target.getAttribute('src') == 'images/Target.png'){
         //move piece
         movePiece(activatedPiece, parseInt(evt.target.className));
@@ -151,7 +163,6 @@ function pieceEventHandler(evt){
             possibleDoubleJump = activatedPiece.possibleMoves.some(function(possMove){
                 return Math.abs(possMove-activatedPiece.locationOnBoard)>10
             });
-            console.log(possibleDoubleJump);
             //if doublejump available, remove single jump options
             if (possibleDoubleJump) {
                 activatedPiece.possibleMoves = activatedPiece.possibleMoves.filter(function(possMove){
@@ -162,11 +173,13 @@ function pieceEventHandler(evt){
             }
         }
         togglePlayerTurn();
+        winner = checkStaleMate();
+        console.log(winner);
         activatedPiece = null;
         render();
         return;
     }
-    //activate piece, render will then show possible moves
+    //if activated piece, show possible moves
     if (board[(parseInt(evt.target.className))].color === playerTurn) {
         activatedPiece = board[(parseInt(evt.target.className))];
     }
@@ -178,8 +191,6 @@ function togglePlayerTurn(){
 }
 
 function render(){
-    redTimerImgEl.setAttribute('src',"images/Red.png");
-    blackTimerImgEl.setAttribute('src',"images/Black.png");
     board.forEach(function(boardSpot, idx){
         if (boardSpot === null) {
             boardSpotsEl[idx].removeAttribute('src');
@@ -199,8 +210,35 @@ function render(){
         }
     }
     //update message for players turn or winner
-    turnEl.textContent = (winner) ? `${winner} wins. CONGRATS!!!`:`${playerTurn}'s turn`; //Maybe capitalize the first letter here
-    
+    winningMessageEl.textContent = (winner) ? `${winner} wins. CONGRATS!!!`:`Checkers`; //Maybe capitalize the first letter here
+    winningMessageEl.textContent = (winner==0) ? `${playerTurn === 'red' ? 'black':'red'} wins by default. CONGRATS!!!`:`Checkers`; //Maybe capitalize the first letter here
+    //update timer boxes
+    if (playerTurn == 'red') {
+        redTimerImgEl.style.backgroundColor = 'green';
+        redTimerEl.style.backgroundColor = 'green';
+        blackTimerImgEl.style.backgroundColor = 'white';
+        blackTimerEl.style.backgroundColor = 'white';
+    } else {
+        redTimerImgEl.style.backgroundColor = 'white';
+        redTimerEl.style.backgroundColor = 'white';
+        blackTimerImgEl.style.backgroundColor = 'green';
+        blackTimerEl.style.backgroundColor = 'green';
+    }
+}
+
+function renderTimer(){
+    redTimerEl.textContent = `${timers.red.min}:${(timers.red.sec<10) ? '0'+timers.red.sec:timers.red.sec}`;
+    blackTimerEl.textContent = `${timers.black.min}:${(timers.black.sec<10) ? '0'+timers.black.sec:timers.black.sec}`;
+}
+
+function updateTimer(){
+    if (timers[playerTurn]['sec']) {
+        timers[playerTurn]['sec'] = timers[playerTurn]['sec'] -1;
+    } else {
+        timers[playerTurn]['sec'] = 59;
+        timers[playerTurn]['min'] = timers[playerTurn]['min'] - 1;
+    }
+    renderTimer();
 }
 
 function movePiece(pieceToMove, newLocation){
@@ -238,8 +276,21 @@ function checkWinner(){
         return 'red';
     }
     return null;
+}
 
-    //Add the checkStalemate condition();
+function checkStaleMate(){
+    let hasPossibleMoves = false;
+    board.forEach(function(boardSpot){
+        if (boardSpot) {
+            console.log(boardSpot.color);
+            console.log(playerTurn);
+            if (boardSpot.color == playerTurn && boardSpot.possibleMoves.length) {
+                console.log(boardSpot.possibleMoves)
+                hasPossibleMoves = true;
+            }
+        }
+    })
+    return (hasPossibleMoves) ? null : 0;
 }
 
 init();
