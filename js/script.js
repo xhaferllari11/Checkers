@@ -3,7 +3,7 @@ const redStartingLocations = [1,3,5,7,
                             8,10,12,14,
                             17,19,21,23];   //Board is array 0-63.
 
-const playTime = 5;                         //minutes
+const playTime = 10;                         //minutes
 
 //variables
 var timers;                 //object to hold time left
