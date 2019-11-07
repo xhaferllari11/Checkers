@@ -1,18 +1,18 @@
-//constants
+//constants---------------------------------------------------
 const redStartingLocations = [1,3,5,7,
                             8,10,12,14,
                             17,19,21,23];   //Board is array 0-63.
 
 const playTime = 10;                         //minutes
 
-//variables
+//variables---------------------------------------------------
 var timers;                 //object to hold time left
 var board;                  //array 0-63 representing spot on board
 var playerTurn;             //string of 'red' or 'black'
 var activatedPiece;         //points to piece object player selected
 var lastPieceJumped;        //boolean true if last action was a piece that jumped
 var possibleDoubleJump;     //boolean true if current piece has chance to double jump
-var winner;                 //null, unless someone wins, then player string
+var winner;                 //null, unless someone wins, then player string, 0 is stalemate
 var timerFunc;              //will hold function for timer timeInterval
 class Piece {
     constructor(color,isKing,locationOnBoard){
@@ -91,7 +91,7 @@ class Piece {
     }
 }
 
-// cached elements
+// cached elements----------------------------------------------
 boardEl = document.querySelector('section');
 winningMessageEl = document.querySelector('h1');
 restartBtn = document.querySelector('button');
@@ -101,11 +101,11 @@ blackTimerImgEl = document.querySelector('div.buttonandtimer .blackpiece');
 redTimerEl = document.querySelector('.redtimer');
 blackTimerEl = document.querySelector('.blacktimer');
 
-//event listeners
+//event listeners-------------------------------------------------
 boardEl.addEventListener('click', boardClickHandler);
 restartBtn.addEventListener('click', init);
 
-//functions
+//functions-------------------------------------------------------
 function init() {
     playerTurn = 'red'
     board = [];
@@ -162,6 +162,7 @@ function boardClickHandler(evt){
     }
     if (evt.target.tagName === 'section' || 
         !evt.target.hasAttribute('src') ||
+        winner == 0 || winner ||
         (evt.target.getAttribute('src') == 'images/Target.png' && !activatedPiece)) {
             return;
         }
@@ -248,6 +249,8 @@ function checkWinner(){
 }
 
 function checkStaleMate(){
+    // stalemate condition is if player does not have any move options
+    // in this case the opposing player wins out of default
     let hasPossibleMoves = false;
     board.forEach(function(boardSpot){
         if (boardSpot) {
@@ -288,7 +291,10 @@ function render(){
     if (winner) {
         winningMessageEl.textContent = `${winner} wins. CONGRATS!!!`; //Maybe capitalize the first letter here
     } else if (winner == 0) {
-        winningMessageEl.textContent = `${playerTurn === 'red' ? 'black':'red'} wins by default. CONGRATS!!!`; //Maybe capitalize the first letter here
+
+        winningMessageEl.textContent = `${playerTurn === 'red' ? 'black':'red'} wins by default. CONGRATS!!!`; 
+    } else {
+        winningMessageEl.textContent = 'Checkers'
     }
     //update timer boxes
     if (playerTurn == 'red') {
@@ -308,5 +314,3 @@ function renderTimer(){
     redTimerEl.textContent = `${timers.red.min}:${(timers.red.sec<10) ? '0'+timers.red.sec:timers.red.sec}`;
     blackTimerEl.textContent = `${timers.black.min}:${(timers.black.sec<10) ? '0'+timers.black.sec:timers.black.sec}`;
 }
-
-// init();

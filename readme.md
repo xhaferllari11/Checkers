@@ -27,16 +27,27 @@ All the rules above apply, with a few additional:
 - There is a time limit of 10 minutes for total play time. Counter times down the as a player takes time to think/move.
 - First player to time out (timer goes to 0), loses the game.
 
+Screenshot of gameboard with timer
+
+![](images/ScreenShot.png)
+
+
 #### Some mroe info for playing virtual checkers
 For now, players must play on the same machine, sharing the mouse when their turn is over. Clicking on a piece will highlight all potential moves it can make. Then clicking on the highlighted spot on the board will move the piece there. The timer was an add one to promote faster gameplay, this can be removed or changed to a shorter timer that resets everytime a players turn starts.
 
 
 ## Short overview of the code
+- Written in HTML, CSS, Javascript
+- Board represented by a section, and each boardspot is an image, src toggeled between a piece image source or an empty string
 - The board is represented by an array of length 64, one for each spot. Index 0 is top left (north west referred to in code comments), and index 63 is bottom right.
 - A checkers class produces all the checker piece objects and they are placed on the board.
 - Event listeners on the board will respond to a player selecting a piece, then to a player selecting a highlighted square for the piece to jump to. This event updates the board with the new locations of checker object pieces.
 - The timer is set to update every second in a setInterval function. Because of the high frequency of renders the timer has, the code has its own render function specifically for the timer.
 - Upon a win, the title of the webpage will display the winning player.
+
+
+
+Game link: https://xhaferllari11.github.io/Checkers/
 
 
 
